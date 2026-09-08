@@ -1,0 +1,12 @@
+node_modules/
+gen/
+*.log
+.env
+default-env.json
+.cds_gen/
+dist/
+mta_archives/
+.DS_Store
+
+# added by cds
+.cdsrc-private.json

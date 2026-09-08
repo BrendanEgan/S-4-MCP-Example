@@ -1,0 +1,8 @@
+{
+  "xsappname": "s4-sales-order-mcp",
+  "tenant-mode": "dedicated",
+  "description": "Security profile for the S/4HANA Sales Order MCP service",
+  "scopes": [],
+  "attributes": [],
+  "role-templates": []
+}

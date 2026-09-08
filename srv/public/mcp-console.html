@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MCP Console — SalesOrderService</title>
+  <style>
+    :root { --bg:#0b1021; --panel:#151b34; --acc:#4f8cff; --ok:#31c48d; --err:#f98080; --txt:#e6e9f2; --mut:#8a93b2; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:var(--bg); color:var(--txt); }
+    header { padding:16px 22px; background:var(--panel); border-bottom:1px solid #26304f; }
+    header h1 { margin:0; font-size:16px; font-weight:600; }
+    header p { margin:4px 0 0; color:var(--mut); font-size:12px; }
+    .wrap { display:grid; grid-template-columns: 380px 1fr; gap:16px; padding:16px; height: calc(100vh - 74px); }
+    .col { display:flex; flex-direction:column; gap:14px; overflow:auto; }
+    .card { background:var(--panel); border:1px solid #26304f; border-radius:10px; padding:14px; }
+    .card h2 { margin:0 0 10px; font-size:13px; color:var(--acc); text-transform:uppercase; letter-spacing:.06em; }
+    label { display:block; font-size:12px; color:var(--mut); margin:8px 0 4px; }
+    textarea, input, select { width:100%; background:#0e1430; color:var(--txt); border:1px solid #2b365a; border-radius:7px; padding:8px; font-family:inherit; font-size:13px; }
+    textarea { resize:vertical; min-height:70px; }
+    button { background:var(--acc); color:#fff; border:0; border-radius:7px; padding:9px 12px; font-size:13px; cursor:pointer; font-family:inherit; margin-top:10px; }
+    button:hover { filter:brightness(1.1); }
+    button.sec { background:#2b365a; }
+    #out { background:#0e1430; border:1px solid #2b365a; border-radius:10px; padding:14px; white-space:pre-wrap; word-break:break-word; font-size:12.5px; flex:1; overflow:auto; }
+    .status { font-size:12px; margin-left:8px; }
+    .ok { color:var(--ok); } .err { color:var(--err); }
+    .hint { color:var(--mut); font-size:11px; margin-top:6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MCP Console — SalesOrderService</h1>
+    <p>Triggers the real MCP tools via same-origin proxy → <code>/mcp/sales-orders</code>. Edit your <code>@mcp</code> annotations, redeploy, and watch results change.</p>
+  </header>
+
+  <div class="wrap">
+    <div class="col">
+      <div class="card">
+        <h2>tools/list</h2>
+        <button onclick="toolsList()">List available tools</button>
+        <div class="hint">Shows the 3 auto-generated tools + their schemas.</div>
+      </div>
+
+      <div class="card">
+        <h2>describe</h2>
+        <label>Entities (comma-separated, optional)</label>
+        <input id="descEntities" placeholder="SalesOrders, SalesOrderItems" />
+        <label>Actions (comma-separated, optional)</label>
+        <input id="descActions" placeholder="getOrderTotal" />
+        <button onclick="describe()">Run describe</button>
+      </div>
+
+      <div class="card">
+        <h2>query</h2>
+        <label>CQL (SELECT only)</label>
+        <textarea id="cql">SELECT from SalesOrders { SalesOrder, SoldToParty, TotalNetAmount, TransactionCurrency } limit 5</textarea>
+        <button onclick="runQuery()">Run query</button>
+        <div class="hint">Reads real S/4 data through the QJ6 destination.</div>
+      </div>
+
+      <div class="card">
+        <h2>call · getOrderTotal</h2>
+        <label>salesOrder</label>
+        <input id="salesOrder" value="1" />
+        <button onclick="callAction()">Call getOrderTotal</button>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card" style="display:flex; align-items:center; padding:10px 14px;">
+        <strong style="font-size:13px;">Response</strong>
+        <span id="status" class="status"></span>
+        <button class="sec" style="margin:0 0 0 auto;" onclick="document.getElementById('out').textContent=''">Clear</button>
+      </div>
+      <div id="out"></div>
+    </div>
+  </div>
+
+  <script>
+    const out = document.getElementById('out')
+    const statusEl = document.getElementById('status')
+
+    function setStatus(txt, ok) {
+      statusEl.textContent = txt
+      statusEl.className = 'status ' + (ok ? 'ok' : 'err')
+    }
+
+    async function rpc(method, params) {
+      setStatus('running…', true)
+      const body = { jsonrpc: '2.0', id: Date.now(), method, params }
+      out.textContent = '→ REQUEST\n' + JSON.stringify(body, null, 2) + '\n\n'
+      try {
+        const resp = await fetch('/mcp-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        const json = await resp.json()
+        out.textContent += '← RESPONSE (HTTP ' + resp.status + ')\n' + JSON.stringify(json, null, 2)
+        setStatus(resp.ok ? 'done' : 'error ' + resp.status, resp.ok)
+      } catch (e) {
+        out.textContent += '← ERROR\n' + String(e)
+        setStatus('error', false)
+      }
+    }
+
+    function csv(id) {
+      const v = document.getElementById(id).value.trim()
+      return v ? v.split(',').map(s => s.trim()).filter(Boolean) : undefined
+    }
+
+    function toolsList() { rpc('tools/list', {}) }
+
+    function describe() {
+      const args = {}
+      const e = csv('descEntities'); if (e) args.entities = e
+      const a = csv('descActions');  if (a) args.actions = a
+      rpc('tools/call', { name: 'describe', arguments: args })
+    }
+
+    function runQuery() {
+      rpc('tools/call', { name: 'query', arguments: { cql: document.getElementById('cql').value } })
+    }
+
+    function callAction() {
+      rpc('tools/call', {
+        name: 'call',
+        arguments: { action: 'getOrderTotal', parameters: { salesOrder: document.getElementById('salesOrder').value } }
+      })
+    }
+  </script>
+</body>
+</html>

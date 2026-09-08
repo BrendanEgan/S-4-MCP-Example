@@ -1,0 +1,42 @@
+{
+  "name": "s4-sales-order-mcp",
+  "version": "1.0.0",
+  "description": "CAP demo: expose SAP S/4HANA API_SALES_ORDER_SRV to AI agents via the @cap-js/mcp adapter (CAP as auth broker + MCP adapter).",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "cds-serve",
+    "watch": "cds watch"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@cap-js/mcp": "^1.4.3",
+    "@sap-cloud-sdk/connectivity": "^4.9.1",
+    "@sap-cloud-sdk/http-client": "^4.9.1",
+    "@sap-cloud-sdk/resilience": "^4.9.1",
+    "@sap/cds": "^10.0.6"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^3.0.2",
+    "@sap/cds-dk": "^10.0.7"
+  },
+  "cds": {
+    "requires": {
+      "API_SALES_ORDER_SRV": {
+        "kind": "odata-v2",
+        "model": "srv/external/API_SALES_ORDER_SRV",
+        "credentials": {
+          "destination": "QJ6",
+          "path": "/sap/opu/odata/sap/API_SALES_ORDER_SRV"
+        }
+      },
+      "auth": "xsuaa",
+      "destinations": true,
+      "connectivity": true,
+      "[development]": {
+        "auth": "mocked"
+      }
+    }
+  }
+}

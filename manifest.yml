@@ -1,0 +1,19 @@
+---
+# Simpler alternative to the MTA: `cf push` after `cds build --production`.
+# Bind the three services first (they already exist in this space):
+#   cf create-service xsuaa        application s4-sales-order-mcp-auth -c xs-security.json
+#   cf bind-service s4-sales-order-mcp-srv BTP-Onboarding-destination
+#   cf bind-service s4-sales-order-mcp-srv BTP-Onboarding-connectivity
+applications:
+  - name: s4-sales-order-mcp-srv
+    path: gen/srv
+    memory: 256M
+    disk_quota: 1024M
+    buildpacks:
+      - nodejs_buildpack
+    services:
+      - s4-sales-order-mcp-auth
+      - BTP-Onboarding-destination
+      - BTP-Onboarding-connectivity
+    env:
+      CDS_ENV: production

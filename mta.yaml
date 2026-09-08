@@ -1,0 +1,58 @@
+_schema-version: '3.1'
+ID: s4-sales-order-mcp
+version: 1.0.0
+description: "CAP MCP server exposing S/4HANA API_SALES_ORDER_SRV to AI agents"
+
+parameters:
+  enable-parallel-deployments: true
+
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
+
+modules:
+  # ------------------------------------------------------------------
+  # The CAP service (also serves the MCP endpoints at /mcp/sales-orders)
+  # ------------------------------------------------------------------
+  - name: s4-sales-order-mcp-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 256M
+      disk-quota: 1024M
+    build-parameters:
+      builder: npm
+    requires:
+      - name: s4-sales-order-mcp-auth
+      - name: s4-sales-order-mcp-destination
+      - name: s4-sales-order-mcp-connectivity
+
+resources:
+  # XSUAA — authenticates the MCP client / protects the service
+  - name: s4-sales-order-mcp-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: s4-sales-order-mcp-${org}-${space}
+        tenant-mode: dedicated
+
+  # Destination service — resolves the QJ6 destination
+  - name: s4-sales-order-mcp-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+
+  # Connectivity service — on-premise proxy / Cloud Connector tunnel to QJ6
+  - name: s4-sales-order-mcp-connectivity
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: connectivity
+      service-plan: lite
