@@ -30,7 +30,12 @@
 <body>
   <header>
     <h1>MCP Console — SalesOrderService</h1>
-    <p>Triggers the real MCP tools via same-origin proxy → <code>/mcp/sales-orders</code>. Edit your <code>@mcp</code> annotations, redeploy, and watch results change.</p>
+    <p>Triggers the real MCP tools via same-origin proxy. Pick a server, edit your <code>@mcp</code> annotations, redeploy, and watch results change.</p>
+    <label style="display:inline-block; margin-top:8px;">MCP Server</label>
+    <select id="server" style="width:auto; display:inline-block; margin-left:8px;">
+      <option value="/mcp-proxy">Basic — /mcp/sales-orders</option>
+      <option value="/mcp-proxy-advanced">Advanced — /mcp/sales-orders-advanced</option>
+    </select>
   </header>
 
   <div class="wrap">
@@ -38,7 +43,7 @@
       <div class="card">
         <h2>tools/list</h2>
         <button onclick="toolsList()">List available tools</button>
-        <div class="hint">Shows the 3 auto-generated tools + their schemas.</div>
+        <div class="hint">Auto-generated tools: describe, query, call.</div>
       </div>
 
       <div class="card">
@@ -63,6 +68,22 @@
         <label>salesOrder</label>
         <input id="salesOrder" value="1" />
         <button onclick="callAction()">Call getOrderTotal</button>
+      </div>
+
+      <div class="card" style="border-color:#3a4a2a;">
+        <h2 style="color:#9ece6a;">ADVANCED · salesByCustomerInRange</h2>
+        <label>fromDate (YYYY-MM-DD)</label>
+        <input id="fromDate" value="2020-01-01" />
+        <label>toDate (YYYY-MM-DD)</label>
+        <input id="toDate" value="2026-12-31" />
+        <button onclick="callRange()">Call salesByCustomerInRange</button>
+        <div class="hint">Advanced server only. Group-by + sum done in CAP.</div>
+      </div>
+
+      <div class="card" style="border-color:#3a4a2a;">
+        <h2 style="color:#9ece6a;">ADVANCED · salesByCustomerAll</h2>
+        <button onclick="callAll()">Call salesByCustomerAll</button>
+        <div class="hint">Advanced server only. Pages ALL ~28k orders (~20s).</div>
       </div>
     </div>
 
@@ -90,7 +111,8 @@
       const body = { jsonrpc: '2.0', id: Date.now(), method, params }
       out.textContent = '→ REQUEST\n' + JSON.stringify(body, null, 2) + '\n\n'
       try {
-        const resp = await fetch('/mcp-proxy', {
+        const proxy = document.getElementById('server').value
+        const resp = await fetch(proxy, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
@@ -127,6 +149,20 @@
         name: 'call',
         arguments: { action: 'getOrderTotal', parameters: { salesOrder: document.getElementById('salesOrder').value } }
       })
+    }
+
+    function callRange() {
+      rpc('tools/call', {
+        name: 'call',
+        arguments: { action: 'salesByCustomerInRange', parameters: {
+          fromDate: document.getElementById('fromDate').value,
+          toDate: document.getElementById('toDate').value
+        } }
+      })
+    }
+
+    function callAll() {
+      rpc('tools/call', { name: 'call', arguments: { action: 'salesByCustomerAll', parameters: {} } })
     }
   </script>
 </body>

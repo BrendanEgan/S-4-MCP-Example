@@ -16,8 +16,6 @@ const path = require('path')
 
 // --- helpers -------------------------------------------------------------
 
-const MCP_PATH = '/mcp/sales-orders'
-
 // Obtain an auth header for calling our own MCP endpoint.
 // - In CF: mint a client-credentials token from the bound XSUAA (VCAP_SERVICES).
 // - Locally (dev/hybrid, auth: mocked): use Basic alice:.
@@ -83,44 +81,37 @@ cds.on('bootstrap', (app) => {
   // 1) Serve the console UI (static) from ./srv/public
   app.use('/console', express.static(path.join(__dirname, 'srv', 'public')))
 
-  // 2) Same-origin MCP proxy. The browser POSTs a JSON-RPC body; we do the full
-  //    initialize -> notifications/initialized -> <method> handshake and return
-  //    the parsed JSON-RPC result.
-  app.use('/mcp-proxy', express.json())
-  app.post('/mcp-proxy', async (req, res) => {
+  // 2) Same-origin MCP proxies for the browser console. The browser POSTs a
+  //    JSON-RPC body; we do the full initialize -> notifications/initialized ->
+  //    <method> handshake against the chosen server and return the parsed result.
+  const makeConsoleProxy = (targetPath) => async (req, res) => {
     try {
       const auth = await getAuthHeader()
       const origin = `http://localhost:${process.env.PORT || 4004}`
-      const target = origin + MCP_PATH
+      const target = origin + targetPath
       const baseHeaders = {
         Authorization: auth,
         'Content-Type': 'application/json',
         Accept: 'application/json, text/event-stream'
       }
 
-      // initialize (capture session id)
       const initResp = await fetch(target, {
         method: 'POST',
         headers: baseHeaders,
         body: JSON.stringify({
           jsonrpc: '2.0', id: 1, method: 'initialize',
-          params: {
-            protocolVersion: '2025-06-18', capabilities: {},
-            clientInfo: { name: 'mcp-console', version: '1' }
-          }
+          params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'mcp-console', version: '1' } }
         })
       })
       const sid = initResp.headers.get('mcp-session-id')
       const sessionHeaders = sid ? { ...baseHeaders, 'mcp-session-id': sid } : baseHeaders
 
-      // notifications/initialized
       await fetch(target, {
         method: 'POST',
         headers: sessionHeaders,
         body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })
       })
 
-      // the actual request from the browser (tools/list or tools/call ...)
       const callResp = await fetch(target, {
         method: 'POST',
         headers: sessionHeaders,
@@ -131,25 +122,31 @@ cds.on('bootstrap', (app) => {
     } catch (e) {
       res.status(500).json({ error: String(e && e.message || e) })
     }
-  })
+  }
 
-  cds.log('mcp-console').info("MCP console available at '/console' (proxy at POST /mcp-proxy)")
+  app.use('/mcp-proxy', express.json())
+  app.post('/mcp-proxy', makeConsoleProxy('/mcp/sales-orders'))
+  app.use('/mcp-proxy-advanced', express.json())
+  app.post('/mcp-proxy-advanced', makeConsoleProxy('/mcp/sales-orders-advanced'))
 
-  // 3) Transparent MCP passthrough for Joule Studio / external MCP clients.
+  cds.log('mcp-console').info("MCP console at '/console' (proxies: /mcp-proxy [basic], /mcp-proxy-advanced)")
+
+  // 3) Transparent MCP passthroughs for Joule Studio / external MCP clients.
   //
-  //    WHY: @cap-js/mcp serves at /mcp/sales-orders, but MCP clients like Joule
-  //    assume the conventional endpoint <base>/mcp and append "/mcp" to the
-  //    destination URL. We expose a standard-looking endpoint at /joule/mcp and
-  //    forward everything verbatim to the real internal endpoint.
+  //    WHY: @cap-js/mcp serves at /mcp/<name>, but MCP clients like Joule assume
+  //    the conventional endpoint <base>/mcp and append "/mcp" to the destination
+  //    URL. We expose standard-looking endpoints and forward verbatim to the
+  //    real internal endpoints, injecting the XSUAA token server-side.
   //
-  //    Destination config:
-  //      URL            = https://<app>/joule   (Joule then calls /joule/mcp)
-  //      Authentication = NoAuthentication       (XSUAA token injected here)
-  const relay = async (req, res) => {
+  //    Destinations:
+  //      QJ6_MCP           URL = https://<app>/joule            -> basic server
+  //      QJ6_MCP_Advanced  URL = https://<app>/joule-advanced   -> advanced server
+  //      Authentication = NoAuthentication (token injected here)
+  const makeRelay = (targetPath) => async (req, res) => {
     try {
       const auth = await getAuthHeader()
       const origin = `http://localhost:${process.env.PORT || 4004}`
-      const target = origin + MCP_PATH
+      const target = origin + targetPath
 
       const fwdHeaders = {
         Authorization: auth,
@@ -178,12 +175,20 @@ cds.on('bootstrap', (app) => {
     }
   }
 
-  app.use('/joule/mcp', express.json({ type: () => true }))
-  app.post('/joule/mcp', relay)
-  app.get('/joule/mcp', relay)
-  app.delete('/joule/mcp', relay)
+  const basicRelay = makeRelay('/mcp/sales-orders')
+  const advancedRelay = makeRelay('/mcp/sales-orders-advanced')
 
-  cds.log('mcp-console').info("Joule MCP passthrough at '/joule/mcp' (set destination URL to '<app>/joule')")
+  app.use('/joule/mcp', express.json({ type: () => true }))
+  app.post('/joule/mcp', basicRelay)
+  app.get('/joule/mcp', basicRelay)
+  app.delete('/joule/mcp', basicRelay)
+
+  app.use('/joule-advanced/mcp', express.json({ type: () => true }))
+  app.post('/joule-advanced/mcp', advancedRelay)
+  app.get('/joule-advanced/mcp', advancedRelay)
+  app.delete('/joule-advanced/mcp', advancedRelay)
+
+  cds.log('mcp-console').info("Joule passthroughs: '/joule/mcp' -> basic, '/joule-advanced/mcp' -> advanced")
 })
 
 module.exports = cds.server
