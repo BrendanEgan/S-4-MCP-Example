@@ -140,6 +140,30 @@ module.exports = class SalesOrderAdvancedService extends cds.ApplicationService 
       return { itemsConsidered: fetched, truncated, materials }
     })
 
+    // --- ADVANCED (FAST): top products by quantity via S/4 analytical query ---
+    // Aggregation happens IN HANA; we fetch only the top-N aggregated rows.
+    this.on('topSellingItemsFast', async (req) => {
+      const limit = Number(req.data.limit) > 0 ? Number(req.data.limit) : 10
+      const { getDestination } = require('@sap-cloud-sdk/connectivity')
+      const { executeHttpRequest } = require('@sap-cloud-sdk/http-client')
+      const dest = await getDestination({ destinationName: 'QJ6' })
+      const base = '/sap/opu/odata/sap/C_SALESORDERITEMQRY_CDS'
+      const params = "(P_ExchangeRateType='M',P_DisplayCurrency='EUR')"
+      const q = `/C_SALESORDERITEMQRY${params}/Results`
+        + `?$top=${limit}`
+        + `&$select=Product,IncomingSalesOrdersQuantity`
+        + `&$orderby=IncomingSalesOrdersQuantity desc`
+        + `&$format=json`
+      const r = await executeHttpRequest(dest, { method: 'GET', url: base + q, headers: { Accept: 'application/json' } })
+      const rows = (r.data && r.data.d && r.data.d.results) || []
+      const products = rows.map(x => ({
+        product: x.Product,
+        incomingQuantity: Number(x.IncomingSalesOrdersQuantity || 0)
+      }))
+      log.info(`topSellingItemsFast: HANA-aggregated top ${products.length} products`)
+      return { source: 'C_SALESORDERITEMQRY_CDS (analytical, HANA aggregation)', products }
+    })
+
     await super.init()
   }
 }

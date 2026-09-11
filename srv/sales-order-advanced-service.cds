@@ -115,4 +115,22 @@ service SalesOrderAdvancedService {
     };
   };
 
+  /**
+   * ADVANCED (FAST): Top-selling materials by ordered quantity, computed by the
+   * S/4 ANALYTICAL query view C_SALESORDERITEMQRY (measure
+   * IncomingSalesOrdersQuantity). The group-by/aggregation runs IN HANA and only
+   * the aggregated top-N rows are returned — no full-table scan in the app.
+   * This is the architecturally-correct "aggregate at the data" approach.
+   *
+   * @param limit maximum number of top products to return (default 10)
+   */
+  function topSellingItemsFast(limit : Integer) returns {
+    source : String;
+    products : many {
+      product : String;
+      incomingQuantity : Decimal(18, 3);
+    };
+  };
+
+
 }
