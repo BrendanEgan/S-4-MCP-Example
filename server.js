@@ -128,12 +128,10 @@ cds.on('bootstrap', (app) => {
   app.post('/mcp-proxy', makeConsoleProxy('/mcp/sales-orders'))
   app.use('/mcp-proxy-advanced', express.json())
   app.post('/mcp-proxy-advanced', makeConsoleProxy('/mcp/sales-orders-advanced'))
-  app.use('/mcp-proxy-products', express.json())
-  app.post('/mcp-proxy-products', makeConsoleProxy('/mcp/products'))
-  app.use('/mcp-proxy-maintenance', express.json())
-  app.post('/mcp-proxy-maintenance', makeConsoleProxy('/mcp/maintenance-orders'))
+  app.use('/mcp-proxy-purchase-manager', express.json())
+  app.post('/mcp-proxy-purchase-manager', makeConsoleProxy('/mcp/purchase-manager'))
 
-  cds.log('mcp-console').info("MCP console at '/console' (proxies: /mcp-proxy, -advanced, -products, -maintenance)")
+  cds.log('mcp-console').info("MCP console at '/console' (proxies: /mcp-proxy, -advanced, -purchase-manager)")
 
   // 3) Transparent MCP passthroughs for Joule Studio / external MCP clients.
   //
@@ -181,8 +179,7 @@ cds.on('bootstrap', (app) => {
 
   const basicRelay = makeRelay('/mcp/sales-orders')
   const advancedRelay = makeRelay('/mcp/sales-orders-advanced')
-  const maintRelay = makeRelay('/mcp/maintenance-orders')
-  const productRelay = makeRelay('/mcp/products')
+  const productRelay = makeRelay('/mcp/purchase-manager')
 
   app.use('/joule/mcp', express.json({ type: () => true }))
   app.post('/joule/mcp', basicRelay)
@@ -194,17 +191,12 @@ cds.on('bootstrap', (app) => {
   app.get('/joule-advanced/mcp', advancedRelay)
   app.delete('/joule-advanced/mcp', advancedRelay)
 
-  app.use('/joule-maintenance/mcp', express.json({ type: () => true }))
-  app.post('/joule-maintenance/mcp', maintRelay)
-  app.get('/joule-maintenance/mcp', maintRelay)
-  app.delete('/joule-maintenance/mcp', maintRelay)
+  app.use('/joule-purchase-manager/mcp', express.json({ type: () => true }))
+  app.post('/joule-purchase-manager/mcp', productRelay)
+  app.get('/joule-purchase-manager/mcp', productRelay)
+  app.delete('/joule-purchase-manager/mcp', productRelay)
 
-  app.use('/joule-products/mcp', express.json({ type: () => true }))
-  app.post('/joule-products/mcp', productRelay)
-  app.get('/joule-products/mcp', productRelay)
-  app.delete('/joule-products/mcp', productRelay)
-
-  cds.log('mcp-console').info("Joule passthroughs: /joule/mcp, /joule-advanced/mcp, /joule-maintenance/mcp, /joule-products/mcp")
+  cds.log('mcp-console').info("Joule passthroughs: /joule/mcp, /joule-advanced/mcp, /joule-purchase-manager/mcp")
 })
 
 module.exports = cds.server

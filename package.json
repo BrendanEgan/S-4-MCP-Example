@@ -34,14 +34,6 @@
           "path": "/sap/opu/odata/sap/API_SALES_ORDER_SRV"
         }
       },
-      "API_MAINTENANCEORDER": {
-        "kind": "odata-v2",
-        "model": "srv/external/API_MAINTENANCEORDER",
-        "credentials": {
-          "destination": "QJ6",
-          "path": "/sap/opu/odata/sap/API_MAINTENANCEORDER"
-        }
-      },
       "API_PRODUCT_SRV": {
         "kind": "odata-v2",
         "model": "srv/external/API_PRODUCT_SRV",
@@ -50,6 +42,32 @@
         "credentials": {
           "destination": "QJ6",
           "path": "/sap/opu/odata/sap/API_PRODUCT_SRV"
+        }
+      },
+      "API_PURCHASEORDER_PROCESS_SRV": {
+        "kind": "odata-v2",
+        "model": "srv/external/API_PURCHASEORDER_PROCESS_SRV",
+        "csrf": true,
+        "csrfInBatch": true,
+        "credentials": {
+          "destination": "QJ6",
+          "path": "/sap/opu/odata/sap/API_PURCHASEORDER_PROCESS_SRV",
+          "queries": {
+            "sap-client": "001"
+          }
+        }
+      },
+      "API_INBOUND_DELIVERY_SRV": {
+        "kind": "odata-v2",
+        "model": "srv/external/API_INBOUND_DELIVERY_SRV",
+        "csrf": true,
+        "csrfInBatch": true,
+        "credentials": {
+          "destination": "QJ6",
+          "path": "/sap/opu/odata/sap/API_INBOUND_DELIVERY_SRV",
+          "queries": {
+            "sap-client": "001"
+          }
         }
       },
       "auth": "xsuaa",

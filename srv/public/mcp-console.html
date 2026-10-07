@@ -35,8 +35,7 @@
     <select id="server" style="width:auto; display:inline-block; margin-left:8px;">
       <option value="/mcp-proxy">Basic — /mcp/sales-orders</option>
       <option value="/mcp-proxy-advanced">Advanced — /mcp/sales-orders-advanced</option>
-      <option value="/mcp-proxy-products">Products — /mcp/products</option>
-      <option value="/mcp-proxy-maintenance">Maintenance — /mcp/maintenance-orders</option>
+      <option value="/mcp-proxy-purchase-manager">Purchase Manager — /mcp/purchase-manager</option>
     </select>
   </header>
 
@@ -89,7 +88,7 @@
       </div>
 
       <div class="card" style="border-color:#4a2a3a;">
-        <h2 style="color:#ff9ec3;">PRODUCTS · createProduct</h2>
+        <h2 style="color:#ff9ec3;">PURCHASE MANAGER · createProduct</h2>
         <label>Description</label>
         <input id="p_desc" value="MCP Console Test Product" />
         <label>Product Type</label>
@@ -97,7 +96,7 @@
         <label>Base Unit</label>
         <input id="p_unit" value="PC" />
         <button onclick="callCreateProduct()">Create Product</button>
-        <div class="hint">Switch server to <b>Products</b> first. Creates a real product master in S/4 (~30-40s).</div>
+        <div class="hint">Switch server to <b>Purchase Manager</b> first. Creates a real product master in S/4 (~30-40s).</div>
       </div>
     </div>
 
@@ -180,7 +179,7 @@
     }
 
     function callCreateProduct() {
-      // works on the Products server (per-action tool named createProduct)
+      // works on the Purchase Manager server (per-action tool named createProduct)
       rpc('tools/call', {
         name: 'createProduct',
         arguments: {
