@@ -22,6 +22,9 @@
     "@sap/cds-dk": "^10.0.7"
   },
   "cds": {
+    "mcp": {
+      "per_action_tool": true
+    },
     "requires": {
       "API_SALES_ORDER_SRV": {
         "kind": "odata-v2",
@@ -29,6 +32,24 @@
         "credentials": {
           "destination": "QJ6",
           "path": "/sap/opu/odata/sap/API_SALES_ORDER_SRV"
+        }
+      },
+      "API_MAINTENANCEORDER": {
+        "kind": "odata-v2",
+        "model": "srv/external/API_MAINTENANCEORDER",
+        "credentials": {
+          "destination": "QJ6",
+          "path": "/sap/opu/odata/sap/API_MAINTENANCEORDER"
+        }
+      },
+      "API_PRODUCT_SRV": {
+        "kind": "odata-v2",
+        "model": "srv/external/API_PRODUCT_SRV",
+        "csrf": true,
+        "csrfInBatch": true,
+        "credentials": {
+          "destination": "QJ6",
+          "path": "/sap/opu/odata/sap/API_PRODUCT_SRV"
         }
       },
       "auth": "xsuaa",

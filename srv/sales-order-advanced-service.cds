@@ -13,6 +13,7 @@ using { API_SALES_ORDER_SRV as S4 } from './external/API_SALES_ORDER_SRV';
  * not support as pushdown, so it is performed in CAP (Node.js).
  */
 @mcp: 'sales-orders-advanced'
+@mcp.instructions: 'Sales order analytics for AI agents. Use describe to explore entities and tools. Use query for ad-hoc reads. For "top product / best seller by volume" prefer topSellingItemsFast (fast, HANA-aggregated). For sales totals per customer use salesByCustomerInRange or salesByCustomerAll.'
 @requires: 'authenticated-user'
 service SalesOrderAdvancedService {
 

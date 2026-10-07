@@ -35,6 +35,8 @@
     <select id="server" style="width:auto; display:inline-block; margin-left:8px;">
       <option value="/mcp-proxy">Basic — /mcp/sales-orders</option>
       <option value="/mcp-proxy-advanced">Advanced — /mcp/sales-orders-advanced</option>
+      <option value="/mcp-proxy-products">Products — /mcp/products</option>
+      <option value="/mcp-proxy-maintenance">Maintenance — /mcp/maintenance-orders</option>
     </select>
   </header>
 
@@ -84,6 +86,18 @@
         <h2 style="color:#9ece6a;">ADVANCED · salesByCustomerAll</h2>
         <button onclick="callAll()">Call salesByCustomerAll</button>
         <div class="hint">Advanced server only. Pages ALL ~28k orders (~20s).</div>
+      </div>
+
+      <div class="card" style="border-color:#4a2a3a;">
+        <h2 style="color:#ff9ec3;">PRODUCTS · createProduct</h2>
+        <label>Description</label>
+        <input id="p_desc" value="MCP Console Test Product" />
+        <label>Product Type</label>
+        <input id="p_type" value="FERT" />
+        <label>Base Unit</label>
+        <input id="p_unit" value="PC" />
+        <button onclick="callCreateProduct()">Create Product</button>
+        <div class="hint">Switch server to <b>Products</b> first. Creates a real product master in S/4 (~30-40s).</div>
       </div>
     </div>
 
@@ -163,6 +177,19 @@
 
     function callAll() {
       rpc('tools/call', { name: 'call', arguments: { action: 'salesByCustomerAll', parameters: {} } })
+    }
+
+    function callCreateProduct() {
+      // works on the Products server (per-action tool named createProduct)
+      rpc('tools/call', {
+        name: 'createProduct',
+        arguments: {
+          description: document.getElementById('p_desc').value,
+          productType: document.getElementById('p_type').value,
+          baseUnit: document.getElementById('p_unit').value,
+          division: '00'
+        }
+      })
     }
   </script>
 </body>
