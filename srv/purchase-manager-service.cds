@@ -89,7 +89,8 @@ service PurchaseManagerService {
 
   /**
    * Create a product master record in S/4HANA (A_Product), with an English
-   * description (deep insert). Returns the generated product number.
+   * description AND plant-level data (A_ProductPlant, which carries the profit
+   * center) via a deep insert. Returns the generated product number.
    *
    * @param productType    material/product type, e.g. FASH or FERT (default FASH)
    * @param baseUnit       base unit of measure, e.g. EA, PC, KG (default EA)
@@ -100,19 +101,27 @@ service PurchaseManagerService {
    * @param weightUnit     weight unit, e.g. KG (optional)
    * @param description    English product description (max 40 chars)
    * @param product        optional external product number (empty = internal numbering)
+   * @param plant          plant for the plant extension, e.g. 1000/1010 (default 1000)
+   * @param profitCenter   profit center assigned at the plant (optional)
+   * @param purchasingGroup purchasing group at the plant (optional)
    */
   action createProduct(
-    productType    : String,
-    baseUnit       : String,
-    division       : String,
-    productGroup   : String,
-    industrySector : String,
-    netWeight      : Decimal(13, 3),
-    weightUnit     : String,
-    description    : String,
-    product        : String
+    productType     : String,
+    baseUnit        : String,
+    division        : String,
+    productGroup    : String,
+    industrySector  : String,
+    netWeight       : Decimal(13, 3),
+    weightUnit      : String,
+    description     : String,
+    product         : String,
+    plant           : String,
+    profitCenter    : String,
+    purchasingGroup : String,
+    storageLocation : String
   ) returns {
     product : String;
+    plant   : String;
     message : String;
   };
 
@@ -120,6 +129,8 @@ service PurchaseManagerService {
   type PurchaseOrderItemInput {
     /** Material number. */
     material       : String;
+    /** Material group. */
+    materialGroup  : String;
     /** Plant. */
     plant          : String;
     /** Ordered quantity. */
@@ -189,6 +200,8 @@ service PurchaseManagerService {
     deliveryDocumentType : String,
     supplier             : String,
     shipToParty          : String,
+    receivingPlant       : String,
+    deliveryDate         : DateTime,
     items                : many InboundDeliveryItemInput
   ) returns {
     deliveryDocument : String;

@@ -24,6 +24,8 @@ service API_INBOUND_DELIVERY_SRV {
     Supplier                          : String(10);
     /** Ship-to party. */
     ShipToParty                       : String(10);
+    /** Receiving plant for the inbound delivery. */
+    ReceivingPlant                    : String(4);
     /** Document date. */
     DocumentDate                      : Date;
     /** Planned goods-receipt / delivery date. */

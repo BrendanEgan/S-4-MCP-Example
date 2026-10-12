@@ -21,6 +21,8 @@ service API_PRODUCT_SRV {
     CreationDate             : DateTime;
     to_Description           : Association to many A_ProductDescription
                                  on to_Description.Product = Product;
+    to_Plant                 : Association to many A_ProductPlant
+                                 on to_Plant.Product = Product;
   }
 
   /** Product description (S/4HANA A_ProductDescription). */
@@ -28,5 +30,17 @@ service API_PRODUCT_SRV {
     key Product              : String(40);
     key Language             : String(2);
     ProductDescription       : String(40);
+  }
+
+  /** Product plant data (S/4HANA A_ProductPlant) — carries ProfitCenter. */
+  entity A_ProductPlant {
+    key Product              : String(40);
+    key Plant                : String(4);
+    ProfitCenter             : String(10);
+    PurchasingGroup          : String(3);
+    StorageLocation          : String(4);
+    MRPType                  : String(2);
+    MRPResponsible           : String(3);
+    AvailabilityCheckType    : String(2);
   }
 }

@@ -49,6 +49,8 @@ service API_PURCHASEORDER_PROCESS_SRV {
     Material                      : String(40);
     /** Short text / description of the item. */
     PurchaseOrderItemText         : String(40);
+    /** Material group. */
+    MaterialGroup                 : String(9);
     /** Plant. */
     Plant                         : String(4);
     /** Ordered quantity. */

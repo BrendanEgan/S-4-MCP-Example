@@ -17,6 +17,7 @@ using { API_SALES_ORDER_SRV as S4 } from './external/API_SALES_ORDER_SRV';
  * performs no prompt-injection input/output validation).
  */
 @mcp: 'sales-orders'
+@odata
 @requires: 'authenticated-user'
 service SalesOrderService {
 

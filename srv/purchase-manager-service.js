@@ -30,10 +30,16 @@ module.exports = class PurchaseManagerService extends cds.ApplicationService {
     this.on('READ', InboundDeliveries, (req) => inb.run(req.query))
     this.on('READ', InboundDeliveryItems, (req) => inb.run(req.query))
 
-    // --- createProduct (deep insert: header + EN description) ---
+    // --- createProduct (deep insert: header + EN description + plant data) ---
+    // Plant data (A_ProductPlant) carries the ProfitCenter. Without a plant
+    // extension the material has basic-data views only and is not usable for
+    // sales/procurement — matching the "missing profit center and plant data"
+    // issue. We send it as a nested to_Plant deep insert (supported by S/4 on
+    // POST /A_Product).
     this.on('createProduct', async (req) => {
       const d = req.data
       const desc = (d.description || '').slice(0, 40)
+      const plant = d.plant || '1000'
       const entry = {
         ProductType: d.productType || 'FASH',
         BaseUnit: d.baseUnit || 'EA',
@@ -46,11 +52,20 @@ module.exports = class PurchaseManagerService extends cds.ApplicationService {
       if (d.netWeight != null) entry.NetWeight = d.netWeight
       if (d.weightUnit) entry.WeightUnit = d.weightUnit
 
+      // Plant extension (only added when a plant is in play, which it always is
+      // via the default). Carries ProfitCenter + PurchasingGroup.
+      const plantRow = { Plant: plant }
+      if (d.product) plantRow.Product = d.product
+      if (d.profitCenter) plantRow.ProfitCenter = d.profitCenter
+      if (d.purchasingGroup) plantRow.PurchasingGroup = d.purchasingGroup
+      if (d.storageLocation) plantRow.StorageLocation = d.storageLocation
+      entry.to_Plant = [plantRow]
+
       try {
         const created = await prod.run(INSERT.into(A_Product).entries(entry))
         const productNo = (created && (created.Product || (Array.isArray(created) && created[0] && created[0].Product))) || d.product
-        log.info(`createProduct: created ${productNo}`)
-        return { product: productNo || '(unknown)', message: 'Product master created' }
+        log.info(`createProduct: created ${productNo} with plant ${plant}`)
+        return { product: productNo || '(unknown)', plant, message: `Product master created with plant ${plant}` }
       } catch (e) {
         log.error('createProduct failed', e && e.message)
         return req.error(502, `Product creation failed: ${(e && e.message) || e}`)
@@ -75,6 +90,7 @@ module.exports = class PurchaseManagerService extends cds.ApplicationService {
             PurchaseOrderQuantityUnit: it.quantityUnit
           }
           if (it.netPriceAmount != null) item.NetPriceAmount = it.netPriceAmount
+          if (it.materialGroup) item.MaterialGroup = it.materialGroup
           if (it.itemText) item.PurchaseOrderItemText = String(it.itemText).slice(0, 40)
           return item
         })
@@ -119,6 +135,8 @@ module.exports = class PurchaseManagerService extends cds.ApplicationService {
       }
       if (d.supplier) entry.Supplier = d.supplier
       if (d.shipToParty) entry.ShipToParty = d.shipToParty
+      if (d.receivingPlant) entry.ReceivingPlant = d.receivingPlant
+      if (d.deliveryDate) entry.DeliveryDate = d.deliveryDate
 
       try {
         const created = await inb.run(INSERT.into(A_InbDeliveryHeader).entries(entry))
